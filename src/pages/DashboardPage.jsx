@@ -1,11 +1,5 @@
 
-import { useState ,useEffect} from "react";
-
 import { useTickets } from "../context/TicketContext";
-
-import { getUsers } from "../services/userService";
-
-
 
 import {
   Box,
@@ -25,7 +19,6 @@ function StatisticsCard({ stat }) {
         border: "1px solid #e5e7eb",
         backgroundColor: "#ffffff",
         transition: "0.2s",
-
         "&:hover": {
           transform: "translateY(-3px)",
           boxShadow: "0px 5px 18px rgba(0,0,0,0.06)",
@@ -86,21 +79,12 @@ function StatisticsCard({ stat }) {
     </Paper>
   );
 }
+
 // Main Dashboard Component
 function DashboardPage() {
-
-  // 1. Store ticket data in React state
   const { tickets } = useTickets();
-  const [users, setUsers] = useState([]);
 
-const [usersLoading, setUsersLoading] = useState(true);
-
-const [usersError, setUsersError] = useState("");
-
-
-
-  // 2. Calculate dashboard statistics
-
+  // Calculate dashboard statistics
   const totalTickets = tickets.length;
 
   const openTickets = tickets.filter(
@@ -123,7 +107,7 @@ const [usersError, setUsersError] = useState("");
     (ticket) => ticket.priority === "High"
   ).length;
 
-  // 3. Prepare data for Statistics Cards
+  // Statistics card data
   const statistics = [
     {
       label: "Total Tickets",
@@ -175,72 +159,46 @@ const [usersError, setUsersError] = useState("");
     },
   ];
 
+  // Ticket status chart data
   const ticketStatusData = [
-      {
-  label: "Open",
-  count: openTickets,
-  percentage: totalTickets > 0
-    ? Math.round((openTickets / totalTickets) * 100)
-    : 0,
-  color: "#2563eb",
-},
+    {
+      label: "Open",
+      count: openTickets,
+      percentage:
+        totalTickets > 0
+          ? Math.round((openTickets / totalTickets) * 100)
+          : 0,
+      color: "#2563eb",
+    },
+    {
+      label: "In Progress",
+      count: inProgressTickets,
+      percentage:
+        totalTickets > 0
+          ? Math.round((inProgressTickets / totalTickets) * 100)
+          : 0,
+      color: "#7c3aed",
+    },
+    {
+      label: "Resolved",
+      count: resolvedTickets,
+      percentage:
+        totalTickets > 0
+          ? Math.round((resolvedTickets / totalTickets) * 100)
+          : 0,
+      color: "#059669",
+    },
+    {
+      label: "Closed",
+      count: closedTickets,
+      percentage:
+        totalTickets > 0
+          ? Math.round((closedTickets / totalTickets) * 100)
+          : 0,
+      color: "#64748b",
+    },
+  ];
 
-{
-    label:"In Progress",
-    count:inProgressTickets,
-    percentage:totalTickets>0
-    ?Math.round((inProgressTickets/totalTickets)*100)
-    :0,
-    color:"#7c3aed"
-}
-,
-{
-    label:"Resolved",
-    count:resolvedTickets,
-    percentage:totalTickets>0
-    ?Math.round((resolvedTickets/totalTickets)*100)
-    :0,
-    color:"#059669"
-},
-
-{
-    label:"Closed",
-    count:closedTickets,
-    percentage:totalTickets>0
-    ?Math.round((closedTickets/totalTickets)*100)
-    :0,
-    color:"#64748b"
-}
-
-  ]
-
-useEffect(() => {
-  async function loadUsers() {
-    try {
-      // Fetch users
-      const data = await getUsers();
-
-      // Get the first five users
-      const firstFiveUsers = data.slice(0, 5);
-
-      // Store users in React state
-      setUsers(firstFiveUsers);
-
-    } catch (error) {
-      // Handle API errors
-      setUsersError(error.message);
-
-    } finally {
-      // Stop loading whether request succeeds or fails
-      setUsersLoading(false);
-    }
-  }
-
-  loadUsers();
-
-}, []);
-
-  // 4. Dashboard UI
   return (
     <Box sx={{ width: "100%" }}>
 
@@ -358,70 +316,6 @@ useEffect(() => {
           </Box>
         ))}
       </Paper>
-        
-{/* API Users Section */}
-<Paper
-  elevation={0}
-  sx={{
-    mt: 3,
-    p: 3,
-    borderRadius: 3,
-    border: "1px solid #e5e7eb",
-  }}
->
-  <Typography variant="h6" fontWeight={700} mb={2}>
-    Sample Users from API
-  </Typography>
-
-  {/* Loading State */}
-  {usersLoading && (
-    <Typography color="text.secondary">
-      Loading users...
-    </Typography>
-  )}
-
-  {/* Error State */}
-  {!usersLoading && usersError && (
-    <Typography color="error">
-      {usersError}
-    </Typography>
-  )}
-
-  {/* Success State */}
-  {!usersLoading && !usersError && (
-    <Box sx={{ display: "grid", gap: 2 }}>
-      {users.map((user) => (
-        <Box
-          key={user.id}
-          sx={{
-            p: 2,
-            borderRadius: 2,
-            backgroundColor: "#f8fafc",
-          }}
-        >
-          <Typography fontWeight={600}>
-            {user.name}
-          </Typography>
-
-          <Typography
-            variant="body2"
-            color="text.secondary"
-          >
-            {user.email}
-          </Typography>
-
-          <Typography
-            variant="caption"
-            color="text.secondary"
-          >
-            {user.company.name}
-          </Typography>
-        </Box>
-      ))}
-    </Box>
-  )}
-</Paper>
-
     </Box>
   );
 }

@@ -8,6 +8,11 @@ import {
   Button,
   Chip,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   FormControl,
   InputLabel,
   MenuItem,
@@ -102,10 +107,11 @@ function TicketDetailsPage() {
 
   const [commentText, setCommentText] = useState("");
   const [feedback, setFeedback] = useState(null);
+  const [closeDialogOpen, setCloseDialogOpen] = useState(false);
 
   // Find the selected ticket
   const ticket = tickets.find(
-    (item) => String(item.id) === String(ticketId)
+    (item) => String(item.id ?? item.ticketId) === String(ticketId)
   );
 
   // Role information
@@ -196,7 +202,7 @@ function TicketDetailsPage() {
       createdAt: now,
     };
 
-    updateTicket(ticket.id, {
+    updateTicket(ticket.id ?? ticket.ticketId, {
       comments: [...comments, newComment],
       updatedAt: now,
     });
@@ -238,7 +244,7 @@ function TicketDetailsPage() {
       createdAt: now,
     };
 
-    updateTicket(ticket.id, {
+    updateTicket(ticket.id ?? ticket.ticketId, {
       assignedTo: newAssignee,
       updatedAt: now,
       history: [...history, historyEntry],
@@ -313,13 +319,11 @@ function TicketDetailsPage() {
       updatedComments.push(resolutionComment);
     }
 
-    // Confirmation before closing
+    // Ask for confirmation before closing a resolved ticket.
+    // The ticket is only updated after the user confirms in the dialog.
     if (nextStatus === "Closed") {
-      const confirmed = window.confirm(
-        "Are you sure you want to close this ticket?"
-      );
-
-      if (!confirmed) return;
+      setCloseDialogOpen(true);
+      return;
     }
 
     const now = new Date().toISOString();
@@ -333,7 +337,7 @@ function TicketDetailsPage() {
       createdAt: now,
     };
 
-    updateTicket(ticket.id, {
+    updateTicket(ticket.id ?? ticket.ticketId, {
       status: nextStatus,
       comments: updatedComments,
       history: [...history, historyEntry],
@@ -347,6 +351,32 @@ function TicketDetailsPage() {
     setFeedback({
       severity: "success",
       message: `Ticket status changed to ${nextStatus}.`,
+    });
+  };
+
+  // Confirm and complete the ticket-closing action.
+  const confirmCloseTicket = () => {
+    const now = new Date().toISOString();
+
+    const historyEntry = {
+      id: `HISTORY-${Date.now()}`,
+      activity: "Status Changed",
+      previousValue: ticket.status,
+      newValue: "Closed",
+      performedBy: currentUserName,
+      createdAt: now,
+    };
+
+    updateTicket(ticket.id ?? ticket.ticketId, {
+      status: "Closed",
+      history: [...history, historyEntry],
+      updatedAt: now,
+    });
+
+    setCloseDialogOpen(false);
+    setFeedback({
+      severity: "success",
+      message: "Ticket closed successfully.",
     });
   };
 
@@ -764,34 +794,28 @@ function TicketDetailsPage() {
                   borderRadius: 2,
                 }}
               >
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  flexWrap="wrap"
-                  gap={1}
-                  mb={1}
-                >
+                <Box sx={{ mb: 1.25 }}>
                   <Typography
                     variant="body2"
                     fontWeight={700}
+                    color="#253858"
                   >
-                    {getPersonName(
-                      comment.commentedBy,
-                      "User"
-                    )}
+                    {getPersonName(comment.commentedBy, "User")}
                   </Typography>
 
                   <Typography
                     variant="caption"
                     color="text.secondary"
+                    display="block"
+                    sx={{ mt: 0.5, lineHeight: 1.5 }}
                   >
                     {formatDate(comment.createdAt)}
                   </Typography>
-                </Stack>
+                </Box>
 
                 <Typography
                   variant="body2"
-                  sx={{ whiteSpace: "pre-wrap" }}
+                  sx={{ whiteSpace: "pre-wrap", lineHeight: 1.7, overflowWrap: "anywhere" }}
                 >
                   {comment.text || comment.commentText || ""}
                 </Typography>
@@ -916,6 +940,46 @@ function TicketDetailsPage() {
           </Stack>
         )}
       </Paper>
+
+      {/* CONFIRM CLOSE TICKET DIALOG */}
+      <Dialog
+        open={closeDialogOpen}
+        onClose={() => setCloseDialogOpen(false)}
+        aria-labelledby="close-ticket-dialog-title"
+        aria-describedby="close-ticket-dialog-description"
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle
+          id="close-ticket-dialog-title"
+          sx={{ fontWeight: 700 }}
+        >
+          Close this ticket?
+        </DialogTitle>
+
+        <DialogContent>
+          <DialogContentText id="close-ticket-dialog-description">
+            Are you sure you want to close ticket {ticket.id ?? ticket.ticketId}?
+            Once closed, it will become read-only and no more comments can be added.
+          </DialogContentText>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1 }}>
+          <Button
+            variant="outlined"
+            onClick={() => setCloseDialogOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={confirmCloseTicket}
+          >
+            Yes, close ticket
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+
 import {
   Alert,
   Box,
@@ -8,6 +9,7 @@ import {
   Paper,
   TextField,
   Typography,
+  Divider,
 } from "@mui/material";
 
 import { useTickets } from "../context/TicketContext";
@@ -26,7 +28,9 @@ const priorities = ["Low", "Medium", "High", "Critical"];
 
 function getPersonName(person, fallback = "Unassigned") {
   if (!person) return fallback;
+
   if (typeof person === "string") return person;
+
   return person.name || person.fullName || person.username || fallback;
 }
 
@@ -48,8 +52,6 @@ export default function EditTicketPage() {
   const [priority, setPriority] = useState("Medium");
   const [assignedTo, setAssignedTo] = useState("Unassigned");
 
-  // Keep every hook above the conditional returns. Sync fields when the route's
-  // ticket is loaded or changes.
   useEffect(() => {
     if (!ticket) return;
 
@@ -65,7 +67,8 @@ export default function EditTicketPage() {
 
   const allowed = ticket
     ? isEmployee
-      ? ticket.raisedBy === selectedUser?.name && ticket.status === "Open"
+      ? ticket.raisedBy === selectedUser?.name &&
+        ticket.status === "Open"
       : ["Open", "In Progress"].includes(ticket.status)
     : false;
 
@@ -103,12 +106,12 @@ export default function EditTicketPage() {
       ],
     };
 
-    // Only support staff can change ticket assignment.
     if (!isEmployee) {
       updatedTicket.assignedTo = assignedTo;
     }
 
     updateTicket(ticket.id ?? ticket.ticketId, updatedTicket);
+
     navigate(`/tickets/${ticketId}`);
   }
 
@@ -118,6 +121,7 @@ export default function EditTicketPage() {
         <Alert severity="error" sx={{ mb: 2 }}>
           Ticket not found.
         </Alert>
+
         <Button onClick={() => navigate("/tickets")}>
           Back to Tickets
         </Button>
@@ -131,6 +135,7 @@ export default function EditTicketPage() {
         <Alert severity="warning" sx={{ mb: 2 }}>
           You are not permitted to edit this ticket.
         </Alert>
+
         <Button onClick={() => navigate(`/tickets/${ticketId}`)}>
           Return to Ticket
         </Button>
@@ -139,113 +144,201 @@ export default function EditTicketPage() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Typography variant="h4" fontWeight={700} mb={3}>
-        Edit Ticket
-      </Typography>
+    <Box sx={{ width: "100%", p: { xs: 2, md: 3 } }}>
+      {/* Page Header */}
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" fontWeight={700}>
+          Edit Ticket
+        </Typography>
 
-      <Paper sx={{ p: { xs: 2, md: 3 }, maxWidth: 900 }}>
+        <Typography color="text.secondary" mt={1}>
+          Modify ticket details and update the information below.
+        </Typography>
+      </Box>
+
+      {/* Form Container */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 2, md: 4 },
+          border: "1px solid #e5e7eb",
+          borderRadius: 3,
+          maxWidth: 1100,
+        }}
+      >
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: 3 }}>
             {error}
           </Alert>
         )}
 
-        <Box component="form" onSubmit={handleSubmit} display="grid" gap={2}>
-          <TextField
-            label="Ticket ID"
-            value={ticket.id ?? ticket.ticketId}
-            disabled
-          />
+        <Box component="form" onSubmit={handleSubmit}>
+          {/* Ticket Information */}
+          <Typography variant="h6" fontWeight={600} mb={2}>
+            Ticket Information
+          </Typography>
 
-          <TextField
-            label="Title"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            inputProps={{ maxLength: 100 }}
-            required
-          />
-
-          <TextField
-            label="Description"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            multiline
-            rows={4}
-            required
-          />
-
-          <TextField
-            select
-            label="Category"
-            value={category}
-            onChange={(event) => setCategory(event.target.value)}
-            required
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(2, minmax(0, 1fr))",
+              },
+              gap: 2.5,
+            }}
           >
-            {categories.map((item) => (
-              <MenuItem key={item} value={item}>
-                {item}
-              </MenuItem>
-            ))}
-          </TextField>
+            <TextField
+              label="Ticket ID"
+              value={ticket.id ?? ticket.ticketId}
+              disabled
+              fullWidth
+            />
 
-          <TextField
-            select
-            label="Priority"
-            value={priority}
-            onChange={(event) => setPriority(event.target.value)}
-            required
-          >
-            {priorities.map((item) => (
-              <MenuItem key={item} value={item}>
-                {item}
-              </MenuItem>
-            ))}
-          </TextField>
+            <TextField
+              label="Title"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              inputProps={{ maxLength: 100 }}
+              required
+              fullWidth
+            />
 
-          <TextField label="Raised By" value={getPersonName(ticket.raisedBy, "-")} disabled />
-
-          <TextField
-            label="Created At"
-            value={
-              ticket.createdAt
-                ? new Date(ticket.createdAt).toLocaleString("en-IN")
-                : "-"
-            }
-            disabled
-          />
-
-          {!isEmployee && (
             <TextField
               select
-              label="Assigned To"
-              value={assignedTo}
-              disabled={ticket.status !== "Open"}
-              onChange={(event) => setAssignedTo(event.target.value)}
+              label="Category"
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
+              required
+              fullWidth
             >
-              <MenuItem value="Unassigned">Unassigned</MenuItem>
-              {supportStaff.map((staff) => (
-                <MenuItem key={staff.id} value={staff.name}>
-                  {staff.name}
+              {categories.map((item) => (
+                <MenuItem key={item} value={item}>
+                  {item}
                 </MenuItem>
               ))}
             </TextField>
-          )}
 
-          <Typography variant="caption" color="text.secondary">
-            Only Open tickets can be assigned or reassigned. Update ticket status
-            from the Ticket Details page to follow the required workflow.
+            <TextField
+              select
+              label="Priority"
+              value={priority}
+              onChange={(event) => setPriority(event.target.value)}
+              required
+              fullWidth
+            >
+              {priorities.map((item) => (
+                <MenuItem key={item} value={item}>
+                  {item}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            <TextField
+              label="Description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              multiline
+              rows={5}
+              required
+              fullWidth
+              sx={{
+                gridColumn: { xs: "1", md: "1 / -1" },
+              }}
+            />
+          </Box>
+
+          {/* Request Information */}
+          <Divider sx={{ my: 4 }} />
+
+          <Typography variant="h6" fontWeight={600} mb={2}>
+            Request Information
           </Typography>
 
-          <Box display="flex" gap={2} flexWrap="wrap">
-            <Button type="submit" variant="contained">
-              Save Changes
-            </Button>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "repeat(2, minmax(0, 1fr))",
+              },
+              gap: 2.5,
+            }}
+          >
+            <TextField
+              label="Raised By"
+              value={getPersonName(ticket.raisedBy, "-")}
+              disabled
+              fullWidth
+            />
+
+            <TextField
+              label="Created At"
+              value={
+                ticket.createdAt
+                  ? new Date(ticket.createdAt).toLocaleString("en-IN")
+                  : "-"
+              }
+              disabled
+              fullWidth
+            />
+
+            {!isEmployee && (
+              <TextField
+                select
+                label="Assigned To"
+                value={assignedTo}
+                disabled={ticket.status !== "Open"}
+                onChange={(event) => setAssignedTo(event.target.value)}
+                fullWidth
+              >
+                <MenuItem value="Unassigned">
+                  Unassigned
+                </MenuItem>
+
+                {supportStaff.map((staff) => (
+                  <MenuItem key={staff.id} value={staff.name}>
+                    {staff.name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
+          </Box>
+
+          {!isEmployee && (
+            <Alert
+              severity="info"
+              sx={{ mt: 2.5 }}
+            >
+              Only Open tickets can be assigned or reassigned.
+              Update ticket status from the Ticket Details page
+              to follow the required workflow.
+            </Alert>
+          )}
+
+          {/* Actions */}
+          <Divider sx={{ my: 4 }} />
+
+          <Box
+            display="flex"
+            justifyContent="flex-end"
+            gap={2}
+            flexWrap="wrap"
+          >
             <Button
               variant="outlined"
               onClick={() => navigate(`/tickets/${ticketId}`)}
+              sx={{ px: 3 }}
             >
               Cancel
+            </Button>
+
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{ px: 4 }}
+            >
+              Save Changes
             </Button>
           </Box>
         </Box>
